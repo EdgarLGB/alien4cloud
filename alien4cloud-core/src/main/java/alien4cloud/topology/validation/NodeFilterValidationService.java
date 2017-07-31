@@ -25,6 +25,7 @@ import org.alien4cloud.tosca.model.types.CapabilityType;
 import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.tosca.normative.types.IPropertyType;
 import org.alien4cloud.tosca.normative.types.ToscaTypes;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
@@ -133,8 +134,8 @@ public class NodeFilterValidationService {
     }
 
     private List<Violations> validateNodeFilterProperties(NodeFilter nodeFilter, NodeTemplate target, NodeType targetType, boolean skipInputs) {
-        if (nodeFilter.getProperties() == null || nodeFilter.getProperties().isEmpty()) {
-            return null;
+        if (MapUtils.isEmpty(nodeFilter.getProperties())) {
+            return Lists.newArrayList();
         }
 
         Map<String, List<PropertyConstraint>> propertyFilters = nodeFilter.getProperties();
