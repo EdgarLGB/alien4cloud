@@ -54,6 +54,9 @@ public class InputArtifactService {
         checkInputArtifactExist(inputArtifactId, topology);
         DeploymentInputs deploymentInputs = alienDAO.findById(DeploymentInputs.class,
                 AbstractDeploymentConfig.generateId(environment.getTopologyVersion(), environment.getId()));
+        if (deploymentInputs == null ) {
+            deploymentInputs = new DeploymentInputs(environment.getTopologyVersion(), environment.getId());
+        }
         // FIXME ensure that deployment inputs are up-to date
         DeploymentArtifact artifact = getDeploymentArtifact(inputArtifactId, deploymentInputs);
         try (InputStream artifactStream = artifactFile.getInputStream()) {

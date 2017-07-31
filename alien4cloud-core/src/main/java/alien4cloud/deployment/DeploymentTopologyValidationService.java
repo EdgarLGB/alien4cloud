@@ -45,8 +45,6 @@ public class DeploymentTopologyValidationService {
     @Inject
     private NodeFilterValidationService nodeFilterValidationService;
     @Inject
-    private DeploymentInputArtifactValidationService deploymentInputArtifactValidationService;
-    @Inject
     private ApplicationEnvironmentService environmentService;
     @Inject
     private TopologyServiceCore topologyServiceCore;

@@ -2,15 +2,18 @@ package org.alien4cloud.alm.deployment.configuration.flow.modifiers;
 
 import static alien4cloud.utils.AlienUtils.safe;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
 import javax.inject.Inject;
 
+import alien4cloud.topology.task.InputArtifactTask;
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.alm.deployment.configuration.flow.ITopologyModifier;
 import org.alien4cloud.alm.deployment.configuration.model.DeploymentInputs;
+import org.alien4cloud.tosca.model.definitions.DeploymentArtifact;
 import org.alien4cloud.tosca.model.definitions.PropertyDefinition;
 import org.alien4cloud.tosca.model.definitions.PropertyValue;
 import org.alien4cloud.tosca.model.templates.Topology;
@@ -42,25 +45,34 @@ public class InputValidationModifier implements ITopologyModifier {
     @Override
     public void process(Topology topology, FlowExecutionContext context) {
         Optional<DeploymentInputs> inputsOptional = context.getConfiguration(DeploymentInputs.class, InputValidationModifier.class.getSimpleName());
-        if (inputsOptional.isPresent()) {
-            // Define a task regarding properties
-            PropertiesTask task = new PropertiesTask();
-            task.setCode(TaskCode.INPUT_PROPERTY);
-            task.setProperties(Maps.newHashMap());
-            task.getProperties().put(TaskLevel.REQUIRED, Lists.newArrayList());
-            Map<String, PropertyValue> inputValues = safe(inputsOptional.get().getInputs());
-            for (Entry<String, PropertyDefinition> propDef : safe(topology.getInputs().entrySet())) {
-                if (propDef.getValue().isRequired() && inputValues.get(propDef.getKey()) == null) {
-                    task.getProperties().get(TaskLevel.REQUIRED).add(propDef.getKey());
-                }
-            }
+        Map<String, PropertyValue> inputProperties = getInputs(inputsOptional);
 
-            if (CollectionUtils.isNotEmpty(task.getProperties().get(TaskLevel.REQUIRED))) {
-                context.log().error(task);
+        // Define a task regarding properties
+        PropertiesTask task = new PropertiesTask();
+        task.setCode(TaskCode.INPUT_PROPERTY);
+        task.setProperties(Maps.newHashMap());
+        task.getProperties().put(TaskLevel.REQUIRED, Lists.newArrayList());
+        Map<String, PropertyValue> inputValues = safe(inputProperties);
+        for (Entry<String, PropertyDefinition> propDef : safe(topology.getInputs()).entrySet()) {
+            if (propDef.getValue().isRequired() && inputValues.get(propDef.getKey()) == null) {
+                task.getProperties().get(TaskLevel.REQUIRED).add(propDef.getKey());
             }
-
-            // Check input artifacts
-            deploymentInputArtifactValidationService.validate(inputsOptional.get());
         }
+
+        if (CollectionUtils.isNotEmpty(task.getProperties().get(TaskLevel.REQUIRED))) {
+            context.log().error(task);
+        }
+
+        // Check input artifacts
+        List<InputArtifactTask> artifactTasks = deploymentInputArtifactValidationService.validate(inputsOptional);
+        artifactTasks.forEach(inputArtifactTask -> context.log().error(inputArtifactTask));
     }
+
+    private Map<String, PropertyValue> getInputs(Optional<DeploymentInputs> inputsOptional) {
+        if (inputsOptional.isPresent()) {
+            return inputsOptional.get().getInputs();
+        }
+        return null;
+    }
+
 }
